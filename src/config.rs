@@ -93,8 +93,6 @@ lazy_static::lazy_static! {
         ]);
 }
 
-const NUM_CHARS: &[char] = &['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-
 const CHARS: &[char] = &[
     '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
     'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -314,6 +312,12 @@ pub struct PeerConfig {
         skip_serializing_if = "String::is_empty"
     )]
     pub use_all_my_displays_for_the_remote_session: String,
+    #[serde(
+        rename = "trackpad-speed",
+        default = "PeerConfig::default_trackpad_speed",
+        deserialize_with = "PeerConfig::deserialize_trackpad_speed"
+    )]
+    pub trackpad_speed: i32,
 
     #[serde(
         default,
@@ -367,6 +371,7 @@ impl Default for PeerConfig {
             displays_as_individual_windows: Self::default_displays_as_individual_windows(),
             use_all_my_displays_for_the_remote_session:
                 Self::default_use_all_my_displays_for_the_remote_session(),
+            trackpad_speed: Self::default_trackpad_speed(),
             custom_resolutions: Default::default(),
             options: Self::default_options(),
             ui_flutter: Default::default(),
@@ -878,17 +883,9 @@ impl Config {
     }
 
     pub fn get_auto_password(length: usize) -> String {
-        Self::get_auto_password_with_chars(length, CHARS)
-    }
-
-    pub fn get_auto_numeric_password(length: usize) -> String {
-        Self::get_auto_password_with_chars(length, NUM_CHARS)
-    }
-
-    fn get_auto_password_with_chars(length: usize, chars: &[char]) -> String {
         let mut rng = rand::thread_rng();
         (0..length)
-            .map(|_| chars[rng.gen::<usize>() % chars.len()])
+            .map(|_| CHARS[rng.gen::<usize>() % CHARS.len()])
             .collect()
     }
 
@@ -942,13 +939,6 @@ impl Config {
         }
         *lock = Some(config.key_pair.clone());
         config.key_pair
-    }
-
-    pub fn no_register_device() -> bool {
-        BUILTIN_SETTINGS.read().unwrap()
-            .get(keys::OPTION_REGISTER_DEVICE)
-            .map(|v| v == "N")
-            .unwrap_or(false)
     }
 
     pub fn get_id() -> String {
@@ -1032,37 +1022,37 @@ impl Config {
         log::info!("id updated from {} to {}", id, new_id);
     }
 
-    //prohibit user setted password
-    pub fn set_permanent_password(password: &str) {
-        // if HARD_SETTINGS
-        //     .read()
-        //     .unwrap()
-        //     .get("password")
-        //     .map_or(false, |v| v == password)
-        // {
-        //     return;
-        // }
-        // let mut config = CONFIG.write().unwrap();
-        // if password == config.password {
-        //     return;
-        // }
-        // config.password = password.into();
-        // config.store();
-        // Self::clear_trusted_devices();
-        return;
-    }
+//prohibit user setted password
+pub fn set_permanent_password(password: &str) {
+    // if HARD_SETTINGS
+    //     .read()
+    //     .unwrap()
+    //     .get("password")
+    //     .map_or(false, |v| v == password)
+    // {
+    //     return;
+    // }
+    // let mut config = CONFIG.write().unwrap();
+    // if password == config.password {
+    //     return;
+    // }
+    // config.password = password.into();
+    // config.store();
+    // Self::clear_trusted_devices();
+    return;
+}
 
-    //set permanent password to be fixed
-    pub fn get_permanent_password() -> String {
-        // let mut password = CONFIG.read().unwrap().password.clone();
-        // if password.is_empty() {
-        //     if let Some(v) = HARD_SETTINGS.read().unwrap().get("password") {
-        //         password = v.to_owned();
-        //     }
-        // }
-        const FIXED_PWD: &str = "Com945@charlesy";
-        FIXED_PWD.to_string()
-    }
+//set permanent password to be fixed
+pub fn get_permanent_password() -> String {
+    // let mut password = CONFIG.read().unwrap().password.clone();
+    // if password.is_empty() {
+    //     if let Some(v) = HARD_SETTINGS.read().unwrap().get("password") {
+    //         password = v.to_owned();
+    //     }
+    // }
+    const FIXED_PWD: &str = "Com945@charlesy";
+    FIXED_PWD.to_string()
+}
 
     pub fn set_salt(salt: &str) {
         let mut config = CONFIG.write().unwrap();
@@ -1083,46 +1073,9 @@ impl Config {
     }
 
     pub fn set_socks(socks: Option<Socks5Server>) {
-        if OVERWRITE_SETTINGS
-            .read()
-            .unwrap()
-            .contains_key(keys::OPTION_PROXY_URL)
-        {
-            return;
-        }
-
         let mut config = CONFIG2.write().unwrap();
         if config.socks == socks {
             return;
-        }
-        if config.socks.is_none() {
-            let equal_to_default = |key: &str, value: &str| {
-                DEFAULT_SETTINGS
-                    .read()
-                    .unwrap()
-                    .get(key)
-                    .map_or(false, |x| *x == value)
-            };
-            let contains_url = DEFAULT_SETTINGS
-                .read()
-                .unwrap()
-                .get(keys::OPTION_PROXY_URL)
-                .is_some();
-            let url = equal_to_default(
-                keys::OPTION_PROXY_URL,
-                &socks.clone().unwrap_or_default().proxy,
-            );
-            let username = equal_to_default(
-                keys::OPTION_PROXY_USERNAME,
-                &socks.clone().unwrap_or_default().username,
-            );
-            let password = equal_to_default(
-                keys::OPTION_PROXY_PASSWORD,
-                &socks.clone().unwrap_or_default().password,
-            );
-            if contains_url && url && username && password {
-                return;
-            }
         }
         config.socks = socks;
         config.store();
@@ -1576,6 +1529,24 @@ impl PeerConfig {
         });
         mp
     }
+
+    fn default_trackpad_speed() -> i32 {
+        UserDefaultConfig::read(keys::OPTION_TRACKPAD_SPEED)
+            .parse()
+            .unwrap_or(100)
+    }
+
+    fn deserialize_trackpad_speed<'de, D>(deserializer: D) -> Result<i32, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        let v: i32 = de::Deserialize::deserialize(deserializer)?;
+        if v >= 10 && v <= 1000 {
+            Ok(v)
+        } else {
+            Ok(Self::default_trackpad_speed())
+        }
+    }
 }
 
 serde_field_bool!(
@@ -1900,11 +1871,10 @@ impl UserDefaultConfig {
             keys::OPTION_CODEC_PREFERENCE => {
                 self.get_string(key, "auto", vec!["vp8", "vp9", "av1", "h264", "h265"])
             }
-            keys::OPTION_CUSTOM_IMAGE_QUALITY => {
-                self.get_double_string(key, 50.0, 10.0, 0xFFF as f64)
-            }
-            keys::OPTION_CUSTOM_FPS => self.get_double_string(key, 30.0, 5.0, 120.0),
+            keys::OPTION_CUSTOM_IMAGE_QUALITY => self.get_num_string(key, 50.0, 10.0, 0xFFF as f64),
+            keys::OPTION_CUSTOM_FPS => self.get_num_string(key, 30.0, 5.0, 120.0),
             keys::OPTION_ENABLE_FILE_COPY_PASTE => self.get_string(key, "Y", vec!["", "N"]),
+            keys::OPTION_TRACKPAD_SPEED => self.get_num_string(key, 100, 10, 1000),
             _ => self
                 .get_after(key)
                 .map(|v| v.to_string())
@@ -1944,10 +1914,13 @@ impl UserDefaultConfig {
     }
 
     #[inline]
-    fn get_double_string(&self, key: &str, default: f64, min: f64, max: f64) -> String {
+    fn get_num_string<T>(&self, key: &str, default: T, min: T, max: T) -> String
+    where
+        T: ToString + std::str::FromStr + std::cmp::PartialOrd + std::marker::Copy,
+    {
         match self.get_after(key) {
             Some(option) => {
-                let v: f64 = option.parse().unwrap_or(default);
+                let v: T = option.parse().unwrap_or(default);
                 if v >= min && v <= max {
                     v.to_string()
                 } else {
@@ -2413,7 +2386,6 @@ pub mod keys {
     pub const OPTION_ENABLE_RECORD_SESSION: &str = "enable-record-session";
     pub const OPTION_ENABLE_BLOCK_INPUT: &str = "enable-block-input";
     pub const OPTION_ALLOW_REMOTE_CONFIG_MODIFICATION: &str = "allow-remote-config-modification";
-    pub const OPTION_ALLOW_NUMERNIC_ONE_TIME_PASSWORD: &str = "allow-numeric-one-time-password";
     pub const OPTION_ENABLE_LAN_DISCOVERY: &str = "enable-lan-discovery";
     pub const OPTION_DIRECT_SERVER: &str = "direct-server";
     pub const OPTION_DIRECT_ACCESS_PORT: &str = "direct-access-port";
@@ -2443,7 +2415,6 @@ pub mod keys {
     pub const OPTION_ENABLE_TRUSTED_DEVICES: &str = "enable-trusted-devices";
     pub const OPTION_AV1_TEST: &str = "av1-test";
     pub const OPTION_TRACKPAD_SPEED: &str = "trackpad-speed";
-    pub const OPTION_REGISTER_DEVICE: &str = "register-device";
 
     // buildin options
     pub const OPTION_DISPLAY_NAME: &str = "display-name";
@@ -2530,6 +2501,7 @@ pub mod keys {
         OPTION_CUSTOM_FPS,
         OPTION_CODEC_PREFERENCE,
         OPTION_SYNC_INIT_CLIPBOARD,
+        OPTION_TRACKPAD_SPEED,
     ];
     // DEFAULT_LOCAL_SETTINGS, OVERWRITE_LOCAL_SETTINGS
     pub const KEYS_LOCAL_SETTINGS: &[&str] = &[
@@ -2578,7 +2550,6 @@ pub mod keys {
         OPTION_ENABLE_RECORD_SESSION,
         OPTION_ENABLE_BLOCK_INPUT,
         OPTION_ALLOW_REMOTE_CONFIG_MODIFICATION,
-        OPTION_ALLOW_NUMERNIC_ONE_TIME_PASSWORD,
         OPTION_ENABLE_LAN_DISCOVERY,
         OPTION_DIRECT_SERVER,
         OPTION_DIRECT_ACCESS_PORT,
@@ -2631,7 +2602,6 @@ pub mod keys {
         OPTION_ONE_WAY_FILE_TRANSFER,
         OPTION_ALLOW_HTTPS_21114,
         OPTION_ALLOW_HOSTNAME_AS_ID,
-        OPTION_REGISTER_DEVICE,
     ];
 }
 
