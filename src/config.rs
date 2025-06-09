@@ -58,7 +58,7 @@ lazy_static::lazy_static! {
     static ref ONLINE: Mutex<HashMap<String, i64>> = Default::default();
     pub static ref PROD_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new("".to_owned());
     pub static ref EXE_RENDEZVOUS_SERVER: RwLock<String> = Default::default();
-    pub static ref APP_NAME: RwLock<String> = RwLock::new("RustDesk".to_owned());
+    pub static ref APP_NAME: RwLock<String> = RwLock::new("RustDesk(Client)".to_owned());
     static ref KEY_PAIR: Mutex<Option<KeyPair>> = Default::default();
     static ref USER_DEFAULT_CONFIG: RwLock<(UserDefaultConfig, Instant)> = RwLock::new((UserDefaultConfig::load(), Instant::now()));
     pub static ref NEW_STORED_PEER_CONFIG: Mutex<HashSet<String>> = Default::default();
@@ -833,28 +833,30 @@ impl Config {
 
     #[cfg(any(target_os = "android", target_os = "ios"))]
     fn gen_id() -> Option<String> {
-        Self::get_auto_id()
+        // Self::get_auto_id()
+        Some("rdmbclient".to_string())
     }
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     fn gen_id() -> Option<String> {
-        let hostname_as_id = BUILTIN_SETTINGS
-            .read()
-            .unwrap()
-            .get(keys::OPTION_ALLOW_HOSTNAME_AS_ID)
-            .map(|v| option2bool(keys::OPTION_ALLOW_HOSTNAME_AS_ID, v))
-            .unwrap_or(false);
-        if hostname_as_id {
-            match whoami::fallible::hostname() {
-                Ok(h) => Some(h.replace(" ", "-")),
-                Err(e) => {
-                    log::warn!("Failed to get hostname, \"{}\", fallback to auto id", e);
-                    Self::get_auto_id()
-                }
-            }
-        } else {
-            Self::get_auto_id()
-        }
+        // let hostname_as_id = BUILTIN_SETTINGS
+        //     .read()
+        //     .unwrap()
+        //     .get(keys::OPTION_ALLOW_HOSTNAME_AS_ID)
+        //     .map(|v| option2bool(keys::OPTION_ALLOW_HOSTNAME_AS_ID, v))
+        //     .unwrap_or(false);
+        // if hostname_as_id {
+        //     match whoami::fallible::hostname() {
+        //         Ok(h) => Some(h.replace(" ", "-")),
+        //         Err(e) => {
+        //             log::warn!("Failed to get hostname, \"{}\", fallback to auto id", e);
+        //             Self::get_auto_id()
+        //         }
+        //     }
+        // } else {
+        //     Self::get_auto_id()
+        // }
+        Some("rddpclient".to_string())
     }
 
     fn get_auto_id() -> Option<String> {
