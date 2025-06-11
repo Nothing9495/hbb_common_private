@@ -860,11 +860,10 @@ impl Config {
     fn get_auto_id() -> Option<String> {
         #[cfg(any(target_os = "android", target_os = "ios"))]
         {
-            return Some(
-                rand::thread_rng()
-                    .gen_range(1_000_000_000..2_000_000_000)
-                    .to_string(),
-            );
+            let id = rand::thread_rng()
+                .gen_range(1000..10000) // 生成1000-9999的四位数
+                .to_string();
+            return Some(format!("Mobile-{}", id));
         }
 
         #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -874,10 +873,13 @@ impl Config {
                 for x in &ma.bytes()[2..] {
                     id = (id << 8) | (*x as u32);
                 }
-                id &= 0x1FFFFFFF;
-                Some(id.to_string())
+                // 确保是四位数 (1000-9999)
+                id = (id % 9000) + 1000;
+                Some(format!("Desktop-{}", id))
             } else {
-                None
+                // 如果无法获取MAC地址，则生成随机四位数
+                let id = rand::thread_rng().gen_range(1000..10000);
+                Some(format!("Desktop-{}", id))
             }
         }
     }
