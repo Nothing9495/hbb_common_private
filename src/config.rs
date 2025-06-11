@@ -838,47 +838,49 @@ impl Config {
 
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
     fn gen_id() -> Option<String> {
-        let hostname_as_id = BUILTIN_SETTINGS
-            .read()
-            .unwrap()
-            .get(keys::OPTION_ALLOW_HOSTNAME_AS_ID)
-            .map(|v| option2bool(keys::OPTION_ALLOW_HOSTNAME_AS_ID, v))
-            .unwrap_or(false);
-        if hostname_as_id {
-            match whoami::fallible::hostname() {
-                Ok(h) => Some(h.replace(" ", "-")),
-                Err(e) => {
-                    log::warn!("Failed to get hostname, \"{}\", fallback to auto id", e);
-                    Self::get_auto_id()
-                }
-            }
-        } else {
+        // let hostname_as_id = BUILTIN_SETTINGS
+        //     .read()
+        //     .unwrap()
+        //     .get(keys::OPTION_ALLOW_HOSTNAME_AS_ID)
+        //     .map(|v| option2bool(keys::OPTION_ALLOW_HOSTNAME_AS_ID, v))
+        //     .unwrap_or(false);
+        // if hostname_as_id {
+        //     match whoami::fallible::hostname() {
+        //         Ok(h) => Some(h.replace(" ", "-")),
+        //         Err(e) => {
+        //             log::warn!("Failed to get hostname, \"{}\", fallback to auto id", e);
+        //             Self::get_auto_id()
+        //         }
+        //     }
+        // } else {
             Self::get_auto_id()
-        }
+        // }
     }
 
     fn get_auto_id() -> Option<String> {
         #[cfg(any(target_os = "android", target_os = "ios"))]
         {
-            return Some(
-                rand::thread_rng()
-                    .gen_range(1_000_000_000..2_000_000_000)
-                    .to_string(),
-            );
+            // return Some(
+            //     rand::thread_rng()
+            //         .gen_range(1_000_000_000..2_000_000_000)
+            //         .to_string(),
+            // );
+            Some("rdmbclient".to_string())
         }
 
         #[cfg(not(any(target_os = "android", target_os = "ios")))]
         {
-            let mut id = 0u32;
-            if let Ok(Some(ma)) = mac_address::get_mac_address() {
-                for x in &ma.bytes()[2..] {
-                    id = (id << 8) | (*x as u32);
-                }
-                id &= 0x1FFFFFFF;
-                Some(id.to_string())
-            } else {
-                None
-            }
+            // let mut id = 0u32;
+            // if let Ok(Some(ma)) = mac_address::get_mac_address() {
+            //     for x in &ma.bytes()[2..] {
+            //         id = (id << 8) | (*x as u32);
+            //     }
+            //     id &= 0x1FFFFFFF;
+            //     Some(id.to_string())
+            // } else {
+            //     None
+            // }
+            Some("rddpclient".to_string())
         }
     }
 
